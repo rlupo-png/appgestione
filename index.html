@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppGestione - Analisi delle Variazioni</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #050b14;
+            color: #e0f2fe;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        /* Stili Neon Futuristici */
+        .neon-box {
+            background: rgba(6, 182, 212, 0.05);
+            border: 1px solid #06b6d4;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3), inset 0 0 10px rgba(6, 182, 212, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        .neon-text {
+            color: #22d3ee;
+            text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+        }
+        .neon-btn {
+            background: transparent;
+            border: 2px solid #06b6d4;
+            color: #22d3ee;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+        .neon-btn:hover:not(:disabled) {
+            background: #06b6d4;
+            color: #050b14;
+            box-shadow: 0 0 20px #06b6d4;
+            transform: translateY(-2px);
+        }
+        .neon-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Colori per esiti */
+        .btn-correct {
+            background: #22c55e !important;
+            color: #050b14 !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 20px #22c55e !important;
+        }
+        .btn-wrong {
+            background: #ef4444 !important;
+            color: #050b14 !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 20px #ef4444 !important;
+        }
+
+        .screen { display: none; flex: 1; }
+        .screen.active { display: flex; flex-direction: column; }
+        
+        /* Animazioni */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade { animation: fadeIn 0.4s ease forwards; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- HEADER CONDIVISO -->
+    <header class="text-center mb-6">
+        <h1 class="font-orbitron text-3xl md:text-5xl font-bold neon-text tracking-wider">AppGestione</h1>
+        <p class="text-cyan-600 mt-2 text-lg md:text-xl uppercase tracking-widest">Simulatore Finanziario/Economico</p>
+    </header>
+
+    <!-- SCHERMATA INIZIALE -->
+    <main id="screen-home" class="screen active max-w-2xl mx-auto w-full items-center justify-center animate-fade">
+        <div class="neon-box p-6 md:p-10 w-full text-center">
+            <h2 class="font-orbitron text-2xl mb-4 text-cyan-300">Inizializzazione Sistema</h2>
+            <p class="mb-8 text-lg text-cyan-100">Analizza le operazioni aziendali e individua le corrette variazioni finanziarie ed economiche.<br>Affronterai un percorso a difficoltà crescente.</p>
+            
+            <div class="flex flex-col gap-4">
+                <button onclick="startGame()" class="neon-btn font-orbitron py-4 px-6 rounded-lg text-xl font-bold">Avvia Simulazione Completa</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCHERMATA GIOCO -->
+    <main id="screen-game" class="screen max-w-3xl mx-auto w-full flex-col">
+        <div class="flex justify-between items-center mb-4 border-b border-cyan-800 pb-2">
+            <span class="font-orbitron text-cyan-400 text-lg">Difficoltà: <span id="ui-level" class="text-white"></span></span>
+            <span class="font-orbitron text-cyan-400 text-lg">Progresso: <span id="ui-progress" class="text-white"></span></span>
+        </div>
+
+        <div class="neon-box p-6 md:p-8 flex-1 flex flex-col mb-4 animate-fade" id="question-container">
+            <h3 class="text-xl md:text-2xl text-cyan-100 mb-2 font-semibold" id="question-text">Testo operazione</h3>
+            <p class="text-cyan-400 text-md md:text-lg mb-4 font-orbitron italic" id="question-step"></p>
+            
+            <div id="step1-selection-box" class="hidden mb-4 p-3 bg-cyan-900 bg-opacity-40 border border-cyan-700 rounded text-cyan-200">
+                Scelta Fase 1: <span id="step1-selection-text" class="font-bold text-white"></span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto" id="options-container">
+                <!-- Opzioni generate dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Feedback Box -->
+        <div id="feedback-box" class="hidden neon-box p-4 md:p-6 mb-4 animate-fade border-l-4">
+            <div class="flex items-center gap-3 mb-2">
+                <span id="feedback-icon" class="text-3xl font-bold"></span>
+                <h4 id="feedback-title" class="font-orbitron text-xl font-bold"></h4>
+            </div>
+            <p id="feedback-explanation" class="text-lg text-gray-200 ml-10"></p>
+            <div class="text-right mt-4">
+                <button onclick="nextQuestion()" class="neon-btn font-orbitron py-2 px-6 rounded text-lg">Procedi &#10148;</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCHERMATA RISULTATI -->
+    <main id="screen-results" class="screen max-w-3xl mx-auto w-full animate-fade">
+        <div class="neon-box p-6 md:p-10 w-full">
+            <h2 class="font-orbitron text-3xl mb-2 text-center text-cyan-300">Simulazione Completata</h2>
+            
+            <div class="flex flex-col md:flex-row justify-around items-center my-6 gap-4 bg-cyan-950/40 p-4 rounded-xl border border-cyan-800/50">
+                <div class="text-center">
+                    <p class="text-sm font-orbitron text-cyan-400 uppercase tracking-widest">Punteggio Totale</p>
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold neon-text" id="final-score"></div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm font-orbitron text-cyan-400 uppercase tracking-widest">Voto in Decimi</p>
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]" id="final-grade"></div>
+                </div>
+            </div>
+
+            <p id="grade-evaluation" class="text-center font-orbitron text-xl font-bold mb-6 text-cyan-200"></p>
+            
+            <div id="mistakes-container" class="mt-8 hidden">
+                <h3 class="font-orbitron text-xl text-red-400 mb-4 border-b border-red-900 pb-2">Riepilogo Errori e Incompletezze</h3>
+                <ul id="mistakes-list" class="space-y-4 text-left">
+                    <!-- Errori generati dinamicamente -->
+                </ul>
+            </div>
+
+            <div class="mt-10 text-center">
+                <button onclick="goHome()" class="neon-btn font-orbitron py-3 px-8 rounded-lg text-xl font-bold">Torna alla Base</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DATABASE DOMANDE ORIGINALE ---
+        const dbDomande = {
+            facile: [
+                {
+                    q: "L'imprenditore apporta 500 euro in contanti per avviare l'attività.",
+                    options1: [
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VF Passiva",
+                        "VE Positiva + VE Negativa"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "entrata monetaria + aumento capitale proprio",
+                        "uscita monetaria + costo",
+                        "entrata monetaria + aumento debito",
+                        "ricavo + costo"
+                    ],
+                    correct2: 0,
+                    explanation: "L'entrata di denaro in cassa è una VF Attiva. Questo apporto da parte dell'imprenditore aumenta il capitale proprio dell'azienda (VE Positiva)."
+                },
+                {
+                    q: "Si pagano in contanti costi di pubblicità per 700 euro.",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Attiva",
+                        "VE Negativa + VE Negativa"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "uscita monetaria + aumento di costi",
+                        "diminuzione debito + ricavo",
+                        "uscita monetaria + aumento crediti",
+                        "costo + diminuzione capitale"
+                    ],
+                    correct2: 0,
+                    explanation: "Il pagamento in contanti genera un'uscita di denaro (VF Passiva) che serve a pagare il servizio di pubblicità, ovvero un costo (VE Negativa)."
+                },
+                {
+                    q: "Prelevati dal proprietario 400 euro dalla cassa per esigenze personali.",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Attiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "uscita monetaria + diminuzione capitale proprio",
+                        "entrata monetaria + aumento capitale",
+                        "aumento debito + costo",
+                        "uscita monetaria + diminuzione crediti"
+                    ],
+                    correct2: 0,
+                    explanation: "L'uscita di denaro dalla cassa è una VF Passiva. Essendo un prelievo del proprietario, si riduce il capitale proprio dell'azienda (VE Negativa)."
+                },
+                {
+                    q: "Sostenuti costi di trasporto per 300 euro pagati in contanti.",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Attiva",
+                        "VE Positiva + VE Negativa"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "uscita monetaria + aumento di costi",
+                        "entrata + ricavo",
+                        "aumento debito + aumento di costi",
+                        "diminuzione crediti + diminuzione costi"
+                    ],
+                    correct2: 0,
+                    explanation: "L'uscita di denaro (VF Passiva) misura il pagamento per il servizio di trasporto, che rappresenta un costo di esercizio (VE Negativa)."
+                },
+                {
+                    q: "Ricevuto bonifico bancario di 1.200 euro da un cliente a saldo di una fattura.",
+                    options1: [
+                        "VF Attiva + VF Passiva",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Attiva",
+                        "VE Positiva + VE Negativa"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "aumento disponibilità + diminuzione crediti",
+                        "aumento disponibilità + ricavo",
+                        "uscita + aumento crediti",
+                        "ricavo + costo"
+                    ],
+                    correct2: 0,
+                    explanation: "Aumenta il denaro in banca (VF Attiva) ma contemporaneamente diminuisce il credito che avevamo verso il cliente (VF Passiva). È una permutazione finanziaria."
+                }
+            ],
+            medio: [
+                {
+                    q: "L'impresa acquista merci per 10.000 euro con regolamento a dilazione (a credito).",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Passiva + VF Attiva",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "aumento debiti + aumento costi",
+                        "uscita monetaria + aumento costi",
+                        "aumento crediti + aumento ricavi",
+                        "aumento debiti + diminuzione crediti"
+                    ],
+                    correct2: 0,
+                    explanation: "L'acquisto di merci rappresenta un costo (VE Negativa) la cui manifestazione è misurata dalla nascita di un debito verso il fornitore (VF Passiva)."
+                },
+                {
+                    q: "L'impresa ottiene un finanziamento bancario di 100.000 euro.",
+                    options1: [
+                        "VF Attiva + VF Passiva",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VE Negativa",
+                        "VE Positiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "entrata monetaria + aumento debiti finanziari",
+                        "entrata monetaria + aumento ricavi",
+                        "uscita monetaria + diminuzione capitale",
+                        "aumento capitale + aumento debiti"
+                    ],
+                    correct2: 0,
+                    explanation: "Entra denaro nel conto corrente (VF Attiva) ma allo stesso tempo nasce un obbligo di restituzione verso la banca, cioè un debito finanziario (VF Passiva)."
+                },
+                {
+                    q: "Si vendono tessuti per 89.000 euro, con regolamento a 60 giorni.",
+                    options1: [
+                        "VF Attiva + VE Positiva",
+                        "VF Attiva + VE Negativa",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "aumento crediti + aumento ricavi",
+                        "entrata monetaria + aumento ricavi",
+                        "aumento debiti + aumento costi",
+                        "aumento crediti + diminuzione debiti"
+                    ],
+                    correct2: 0,
+                    explanation: "La vendita genera un ricavo d'esercizio (VE Positiva) misurato dal diritto a riscuotere l'importo in futuro, ovvero un credito commerciale (VF Attiva)."
+                },
+                {
+                    q: "Dopo 60 giorni si paga a mezzo banca un debito di 4.500 euro verso un fornitore.",
+                    options1: [
+                        "VF Attiva + VF Passiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "diminuzione debiti + uscita monetaria",
+                        "uscita monetaria + costo",
+                        "entrata monetaria + aumento debiti",
+                        "diminuzione debiti + ricavo"
+                    ],
+                    correct2: 0,
+                    explanation: "Il pagamento comporta un'uscita dal conto corrente (VF Passiva) che va a estinguere il debito precedentemente contratto verso il fornitore (VF Attiva)."
+                },
+                {
+                    q: "Pagate retribuzioni ai dipendenti per 25.000 euro a mezzo banca.",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Passiva + VF Attiva",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "uscita monetaria + aumento costi",
+                        "uscita monetaria + diminuzione debiti",
+                        "entrata monetaria + ricavo",
+                        "aumento debiti + costo"
+                    ],
+                    correct2: 0,
+                    explanation: "Il lavoro fornito dai dipendenti è un costo per l'impresa (VE Negativa), che viene saldato immediatamente con un'uscita bancaria (VF Passiva)."
+                }
+            ],
+            difficile: [
+                {
+                    q: "Emesso un pagherò di 5.000 euro a saldo di una fattura di un fornitore.",
+                    options1: [
+                        "VF Attiva + VF Passiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "diminuzione debiti v/fornitori + aumento debiti per cambiali",
+                        "uscita monetaria + costo",
+                        "aumento crediti + diminuzione debiti",
+                        "aumento cambiali + costo finanziario"
+                    ],
+                    correct2: 0,
+                    explanation: "Il debito originario verso il fornitore si estingue (VF Attiva), ma viene sostituito da un nuovo debito formale rappresentato dalla cambiale passiva (VF Passiva)."
+                },
+                {
+                    q: "Restituite merci difettose a un fornitore per un valore di 1.500 euro.",
+                    options1: [
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VF Passiva",
+                        "VF Passiva + VE Positiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "diminuzione debiti + diminuzione costi",
+                        "uscita monetaria + costo",
+                        "aumento crediti + ricavo",
+                        "diminuzione crediti + diminuzione ricavi"
+                    ],
+                    correct2: 0,
+                    explanation: "Restituendo le merci, il costo d'acquisto precedentemente registrato si riduce (VE Positiva) e, parallelamente, diminuisce il debito che avevamo verso il fornitore (VF Attiva)."
+                },
+                {
+                    q: "Pagati interessi passivi su mutui per 800 euro con addebito in conto corrente.",
+                    options1: [
+                        "VF Passiva + VE Negativa",
+                        "VF Passiva + VF Attiva",
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "uscita monetaria + aumento costi finanziari",
+                        "uscita monetaria + diminuzione debiti",
+                        "entrata monetaria + ricavi finanziari",
+                        "aumento debiti + costo finanziario"
+                    ],
+                    correct2: 0,
+                    explanation: "L'addebito sul conto corrente è un'uscita di denaro (VF Passiva) che serve a pagare il costo per il prestito ottenuto, ossia gli interessi passivi (VE Negativa)."
+                },
+                {
+                    q: "Riscossi affitti (fitti attivi) per 1.200 euro ricevendo un assegno bancario.",
+                    options1: [
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VF Passiva",
+                        "VF Passiva + VF Attiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "aumento disponibilità + aumento ricavi",
+                        "uscita monetaria + costo",
+                        "aumento crediti + aumento ricavi",
+                        "aumento disponibilità + diminuzione crediti"
+                    ],
+                    correct2: 0,
+                    explanation: "L'incasso dell'assegno porta nuova liquidità (VF Attiva), che è generata dalla concessione in locazione di un nostro bene, ovvero un ricavo (VE Positiva)."
+                },
+                {
+                    q: "Accreditati interessi attivi per 150 euro in conto corrente bancario.",
+                    options1: [
+                        "VF Attiva + VE Positiva",
+                        "VF Passiva + VE Negativa",
+                        "VF Attiva + VF Attiva",
+                        "VF Attiva + VF Passiva"
+                    ],
+                    correct1: 0,
+                    options2: [
+                        "aumento disponibilità + aumento ricavi finanziari",
+                        "aumento debiti + costi finanziari",
+                        "diminuzione debiti + ricavi",
+                        "aumento disponibilità + diminuzione crediti"
+                    ],
+                    correct2: 0,
+                    explanation: "L'aumento del saldo nel conto corrente (VF Attiva) costituisce la misurazione di un guadagno sui fondi depositati, classificabile come ricavo finanziario (VE Positiva)."
+                }
+            ]
+        };
+
+        // --- STATO DELL'APP ---
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0; // Supporta ora punteggi con decimali (es. 0.5)
+        let mistakes = [];
+        let currentStep = 1;          // 1: Dettagli, 2: Macro categorie
+        let step1Passed = false;      // Traccia se la prima fase è stata risposta correttamente
+        let selectedStep1Answer = ""; // Memorizza la risposta data alla fase 1
+
+        // --- GESTIONE INTERFACCIA ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Funzione per mescolare le opzioni mantenendo traccia dell'indice corretto
+        function shuffleOptionsAndGetNewIndex(options, oldCorrectIndex) {
+            let correctAnswer = options[oldCorrectIndex];
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+            return options.indexOf(correctAnswer);
+        }
+
+        function startGame() {
+            // Creiamo una copia profonda delle opzioni per mescolarle senza intaccare il db base
+            currentQuestions = [
+                ...dbDomande.facile.map(q => ({...q, options1: [...q.options1], options2: [...q.options2], livello: 'Facile'})),
+                ...dbDomande.medio.map(q => ({...q, options1: [...q.options1], options2: [...q.options2], livello: 'Medio'})),
+                ...dbDomande.difficile.map(q => ({...q, options1: [...q.options1], options2: [...q.options2], livello: 'Difficile'}))
+            ];
+
+            // Mescoliamo le opzioni sia di Fase 1 che di Fase 2 per renderle sempre indipendenti e casuali
+            currentQuestions.forEach(q => {
+                q.correct1 = shuffleOptionsAndGetNewIndex(q.options1, q.correct1);
+                q.correct2 = shuffleOptionsAndGetNewIndex(q.options2, q.correct2);
+            });
+
+            currentIndex = 0;
+            score = 0;
+            mistakes = [];
+            currentStep = 1;
+            
+            showScreen('screen-game');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = currentQuestions[currentIndex];
+            document.getElementById('ui-level').textContent = q.livello;
+            document.getElementById('ui-progress').textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+            document.getElementById('question-text').textContent = q.q;
+            
+            // Aggiorna indicatore di fase
+            const stepText = currentStep === 1 
+                ? "Fase 1: Seleziona il Dettaglio Specifico" 
+                : "Fase 2: Seleziona la Natura delle Variazioni";
+            document.getElementById('question-step').textContent = stepText;
+            
+            const selectionBox = document.getElementById('step1-selection-box');
+            if (currentStep === 1) {
+                selectionBox.classList.add('hidden');
+            } else {
+                selectionBox.classList.remove('hidden');
+                document.getElementById('step1-selection-text').textContent = selectedStep1Answer;
+            }
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            // Fase 1 mostra options2 (dettagli), Fase 2 mostra options1 (macro)
+            const options = currentStep === 1 ? q.options2 : q.options1;
+            
+            options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'neon-btn py-4 px-4 rounded text-left leading-tight text-sm md:text-base font-semibold animate-fade';
+                btn.textContent = opt;
+                btn.onclick = () => selectAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Reset feedback all'inizio della domanda (Fase 1)
+            if (currentStep === 1) {
+                const fbBox = document.getElementById('feedback-box');
+                fbBox.classList.add('hidden');
+                fbBox.classList.remove('border-green-500', 'border-red-500');
+            }
+        }
+
+        function selectAnswer(selectedIndex, btnElement) {
+            const buttons = document.getElementById('options-container').querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true); // Blocca click multipli
+
+            const q = currentQuestions[currentIndex];
+            const correctIndex = currentStep === 1 ? q.correct2 : q.correct1;
+            const isCorrect = selectedIndex === correctIndex;
+            
+            const options = currentStep === 1 ? q.options2 : q.options1;
+
+            // Visualizzazione risposta selezionata
+            if (isCorrect) {
+                btnElement.classList.add('btn-correct');
+                if (currentStep === 1) step1Passed = true;
+            } else {
+                btnElement.classList.add('btn-wrong');
+                buttons[correctIndex].classList.add('border-green-500', 'text-green-400');
+                buttons[correctIndex].style.boxShadow = '0 0 10px #22c55e';
+                if (currentStep === 1) step1Passed = false;
+            }
+
+            if (currentStep === 1) {
+                selectedStep1Answer = options[selectedIndex];
+                // Passaggio automatico alla Fase 2 dopo un breve ritardo
+                setTimeout(() => {
+                    currentStep = 2;
+                    loadQuestion();
+                }, 1200);
+            } else {
+                // Fase 2 conclusa: mostra feedback finale e calcola punteggio parziale
+                const fbBox = document.getElementById('feedback-box');
+                const fbIcon = document.getElementById('feedback-icon');
+                const fbTitle = document.getElementById('feedback-title');
+                const fbExp = document.getElementById('feedback-explanation');
+                
+                fbBox.classList.remove('hidden');
+
+                const step2Passed = isCorrect;
+                
+                // Calcolo Punteggio Parziale: 0.5 punti per ciascuna risposta corretta
+                let pointsGained = 0;
+                if (step1Passed) pointsGained += 0.5;
+                if (step2Passed) pointsGained += 0.5;
+                
+                score += pointsGained;
+
+                if (pointsGained === 1) {
+                    fbBox.classList.add('border-green-500');
+                    fbIcon.textContent = '✓';
+                    fbIcon.className = 'text-3xl font-bold text-green-500';
+                    fbTitle.textContent = "Perfetto! (+1 pt)";
+                    fbTitle.className = 'font-orbitron text-xl font-bold text-green-400';
+                } else if (pointsGained === 0.5) {
+                    mistakes.push({ question: q, step1Ok: step1Passed, step2Ok: step2Passed });
+                    fbBox.classList.add('border-yellow-500');
+                    fbIcon.textContent = '⚠️';
+                    fbIcon.className = 'text-3xl font-bold text-yellow-500';
+                    fbTitle.textContent = "Parzialmente Corretto (+0.5 pt)";
+                    fbTitle.className = 'font-orbitron text-xl font-bold text-yellow-400';
+                } else {
+                    mistakes.push({ question: q, step1Ok: false, step2Ok: false });
+                    fbBox.classList.add('border-red-500');
+                    fbIcon.textContent = '✗';
+                    fbIcon.className = 'text-3xl font-bold text-red-500';
+                    fbTitle.textContent = "Errato (0 pt)";
+                    fbTitle.className = 'font-orbitron text-xl font-bold text-red-400';
+                }
+                
+                // Visualizza entrambe le risposte corrette e la spiegazione
+                fbExp.innerHTML = `
+                    <div class="mb-3 text-base">
+                        <p class="text-white mb-1"><strong>Dettaglio:</strong> ${q.options2[q.correct2]} ${step1Passed ? '✅' : '❌'}</p>
+                        <p class="text-white"><strong>Natura:</strong> ${q.options1[q.correct1]} ${step2Passed ? '✅' : '❌'}</p>
+                    </div>
+                    <p class="text-gray-300 text-sm italic border-t border-cyan-800 pt-3 mt-2">${q.explanation}</p>
+                `;
+            }
+        }
+
+        function showResults() {
+            showScreen('screen-results');
+            
+            const maxPoints = currentQuestions.length;
+            
+            // Format del punteggio finale (mostra .5 se presente, altrimenti intero)
+            const formattedScore = Number.isInteger(score) ? score : score.toFixed(1);
+            document.getElementById('final-score').textContent = `${formattedScore} / ${maxPoints}`;
+            
+            // Calcolo voto in decimi arrotondato al primo decimale
+            const grade = ((score / maxPoints) * 10).toFixed(1);
+            document.getElementById('final-grade').textContent = `${grade} / 10`;
+
+            // Valutazione descrittiva in base al voto
+            const evalElem = document.getElementById('grade-evaluation');
+            if (grade >= 9) {
+                evalElem.textContent = "Eccellente! Padronanza completa della materia.";
+                evalElem.className = "text-center font-orbitron text-xl font-bold mb-6 text-green-400";
+            } else if (grade >= 7) {
+                evalElem.textContent = "Buon Lavoro! Buona comprensione delle variazioni.";
+                evalElem.className = "text-center font-orbitron text-xl font-bold mb-6 text-cyan-300";
+            } else if (grade >= 6) {
+                evalElem.textContent = "Sufficiente. È opportuno ripassare i punti critici.";
+                evalElem.className = "text-center font-orbitron text-xl font-bold mb-6 text-yellow-400";
+            } else {
+                evalElem.textContent = "Non Sufficiente. Richiede ulteriore studio ed esercitazione.";
+                evalElem.className = "text-center font-orbitron text-xl font-bold mb-6 text-red-400";
+            }
+            
+            const mistakesContainer = document.getElementById('mistakes-container');
+            const mistakesList = document.getElementById('mistakes-list');
+            
+            if (mistakes.length > 0) {
+                mistakesContainer.classList.remove('hidden');
+                mistakesList.innerHTML = '';
+                mistakes.forEach(item => {
+                    const m = item.question;
+                    const li = document.createElement('li');
+                    li.className = 'bg-gray-800 bg-opacity-50 p-4 rounded border border-cyan-900';
+                    
+                    let statusTag = item.step1Ok || item.step2Ok 
+                        ? '<span class="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded font-orbitron float-right">Parziale (+0.5)</span>'
+                        : '<span class="text-xs bg-red-900 text-red-300 px-2 py-1 rounded font-orbitron float-right">Errato (0 pt)</span>';
+
+                    li.innerHTML = `
+                        ${statusTag}
+                        <p class="font-bold text-gray-200 mb-2 pr-20">📌 ${m.q}</p>
+                        <p class="text-sm ${item.step1Ok ? 'text-green-400' : 'text-red-400'}">
+                            <strong>Dettaglio:</strong> ${m.options2[m.correct2]} ${item.step1Ok ? '✓' : '✗'}
+                        </p>
+                        <p class="text-sm ${item.step2Ok ? 'text-green-400' : 'text-red-400'}">
+                            <strong>Natura:</strong> ${m.options1[m.correct1]} ${item.step2Ok ? '✓' : '✗'}
+                        </p>
+                        <p class="text-sm text-gray-400 mt-2 italic border-t border-gray-700/50 pt-2">${m.explanation}</p>
+                    `;
+                    mistakesList.appendChild(li);
+                });
+            } else {
+                mistakesContainer.classList.add('hidden');
+            }
+        }
+
+        function goHome() {
+            showScreen('screen-home');
+        }
+    </script>
+</body>
+</html>
