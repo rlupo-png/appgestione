@@ -528,7 +528,7 @@
             if (currentStep === 1) {
                 const fbBox = document.getElementById('feedback-box');
                 fbBox.classList.add('hidden');
-                fbBox.classList.remove('border-green-500', 'border-red-500');
+                fbBox.classList.remove('border-green-500', 'border-red-500', 'border-yellow-500');
             }
         }
 
@@ -608,6 +608,16 @@
                     </div>
                     <p class="text-gray-300 text-sm italic border-t border-cyan-800 pt-3 mt-2">${q.explanation}</p>
                 `;
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            currentStep = 1;
+            if (currentIndex < currentQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
             }
         }
 
